@@ -1,0 +1,21 @@
+{
+  "fonts": {
+    "heading": "Calibri",
+    "body": "Calibri"
+  },
+  "fontSize": {
+    "name": 24,
+    "sectionHeading": 14,
+    "body": 11
+  },
+  "margins": {
+    "top": 720,
+    "bottom": 720,
+    "left": 720,
+    "right": 720
+  },
+  "spacing": {
+    "afterParagraph": 120,
+    "afterSection": 200
+  }
+}

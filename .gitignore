@@ -1,0 +1,21 @@
+node_modules/
+dist/
+.env
+.env.local
+*.tsbuildinfo
+
+# Output
+generated-resumes/*.docx
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

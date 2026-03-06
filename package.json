@@ -1,0 +1,25 @@
+{
+  "name": "obsidian-tasks",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AI Whiteboard Resume Workflow — Obsidian vault to ATS-optimized DOCX resumes",
+  "scripts": {
+    "dev": "pnpm --filter backend dev & pnpm --filter frontend dev",
+    "dev:backend": "pnpm --filter backend dev",
+    "dev:frontend": "pnpm --filter frontend dev",
+    "build": "pnpm --filter shared build && pnpm --filter backend build && pnpm --filter frontend build",
+    "build:shared": "pnpm --filter shared build",
+    "test": "pnpm -r test",
+    "test:backend": "pnpm --filter backend test",
+    "test:frontend": "pnpm --filter frontend test",
+    "lint": "pnpm -r lint",
+    "clean": "pnpm -r clean"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild"]
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  }
+}
