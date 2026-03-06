@@ -1,0 +1,12 @@
+{
+  "batchId": "32b1cf9c-60d2-4477-8630-3d58ee3b2970",
+  "startedAt": 1772826919568,
+  "resumes": [
+    {
+      "filename": "job_1_failed",
+      "status": "failed",
+      "error": "401 {\"type\":\"error\",\"error\":{\"type\":\"authentication_error\",\"message\":\"invalid x-api-key\"},\"request_id\":\"req_011CYnQz5CHCbeC3N7oSFBae\"}"
+    }
+  ],
+  "completedAt": 1772826927217
+}
