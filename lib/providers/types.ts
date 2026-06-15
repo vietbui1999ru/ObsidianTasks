@@ -1,4 +1,4 @@
-import type { ZodType } from 'zod'
+import type { ZodType, ZodTypeDef } from 'zod'
 
 /** Options threaded to a runner and through structured calls. */
 export interface RunOptions {
@@ -20,5 +20,7 @@ export type CliRunner = (prompt: string, opts?: RunOptions) => Promise<string>
 
 /** The structured-output contract every provider satisfies. */
 export interface ProviderAdapter {
-  runStructured<T>(schema: ZodType<T>, prompt: string, opts?: RunOptions): Promise<T>
+  // ZodTypeDef/unknown input so schemas using .default()/.optional() (divergent
+  // input vs output types) are accepted, not just identity-typed schemas.
+  runStructured<T>(schema: ZodType<T, ZodTypeDef, unknown>, prompt: string, opts?: RunOptions): Promise<T>
 }
