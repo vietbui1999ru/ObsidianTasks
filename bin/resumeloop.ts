@@ -6,6 +6,7 @@
  *   resumeloop init [dir]      scaffold a files-canonical workspace (default: cwd)
  *   resumeloop reindex [dir]   rebuild .cache/index.db from the job files
  *   resumeloop onboard [dir]   deterministic setup: pick + validate a provider, profile basics
+ *   resumeloop import <cv> [dir]  AI-extract experience/projects/skills from a CV into profile.json
  */
 import fs from 'node:fs'
 import path from 'node:path'
@@ -14,7 +15,9 @@ import { initWorkspace } from '../lib/workspace/init'
 import { reindex } from '../lib/workspace/index-db'
 import { workspaceRoot, profilePath } from '../lib/workspace/paths'
 import { validateProvider, setProfileBasics } from '../lib/workspace/onboard'
-import { listProviders, setActiveProviderId } from '../lib/providers/active-provider'
+import { extractProfile, applyExtractedProfile } from '../lib/workspace/import-cv'
+import { listProviders, setActiveProviderId, getActiveProviderId } from '../lib/providers/active-provider'
+import { getRunner } from '../lib/providers/factory'
 
 /**
  * A prompt reader that works both interactively (TTY → readline) and for piped/
@@ -90,6 +93,55 @@ async function onboard(root: string): Promise<number> {
   }
 }
 
+/** Phase-2 onboarding: extract profile data from a CV file via the active provider. */
+async function importCv(cvFile: string | undefined, root: string): Promise<number> {
+  process.env.RESUMELOOP_HOME = root
+  if (!fs.existsSync(profilePath(root))) initWorkspace(root)
+
+  const providerId = getActiveProviderId()
+  if (!providerId) {
+    console.error('No active provider. Run `resumeloop onboard` first.')
+    return 1
+  }
+  if (!cvFile || !fs.existsSync(cvFile)) {
+    console.error('Usage: resumeloop import <cv-file> [dir]')
+    return 1
+  }
+  const cvText = fs.readFileSync(cvFile, 'utf8')
+  if (!cvText.trim()) { console.error('CV file is empty.'); return 1 }
+
+  console.log(`Extracting profile from ${cvFile} via ${providerId}…`)
+  let extracted
+  try {
+    extracted = await extractProfile(cvText, getRunner(providerId))
+  } catch (e) {
+    console.error(`\nExtraction failed: ${(e as Error).message}`)
+    console.error('Fallback: edit data/profile.json manually (experience[] / projects[] / skills{}).')
+    return 1
+  }
+
+  console.log(
+    `\nExtracted: ${extracted.experience.length} experience, ` +
+    `${extracted.projects.length} projects, ${Object.keys(extracted.skills).length} skill categories`,
+  )
+  for (const e of extracted.experience) console.log(`  • ${e.title} @ ${e.company} — ${e.bullets.length} bullets`)
+  for (const p of extracted.projects) console.log(`  • project: ${p.name} — ${p.bullets.length} bullets`)
+
+  const asker = makeAsker()
+  let ok = false
+  try {
+    ok = (await asker.ask('\nWrite this into profile.json? [y/N]: ')).trim().toLowerCase() === 'y'
+  } finally {
+    asker.close()
+  }
+  if (!ok) { console.log('Discarded — nothing written.'); return 0 }
+
+  applyExtractedProfile(root, extracted)
+  reindex(root) // keep the workspace index fresh after the profile changes
+  console.log(`✓ Imported → ${profilePath(root)} (reindexed)`)
+  return 0
+}
+
 async function main(argv: string[]): Promise<number> {
   const [cmd, dir] = argv
   const resolveRoot = (fallback: string) => (dir ? path.resolve(dir) : fallback)
@@ -109,8 +161,12 @@ async function main(argv: string[]): Promise<number> {
     }
     case 'onboard':
       return onboard(resolveRoot(workspaceRoot()))
+    case 'import':
+      // resumeloop import <cv-file> [dir]
+      return importCv(argv[1], argv[2] ? path.resolve(argv[2]) : workspaceRoot())
     default:
-      console.error('usage: resumeloop <init|reindex|onboard> [dir]')
+      console.error('usage: resumeloop <init|reindex|onboard|import> [args]')
+      console.error('  import <cv-file> [dir]   AI-extract profile from a CV')
       return 1
   }
 }
