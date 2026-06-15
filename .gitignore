@@ -88,3 +88,6 @@ logs/
 
 # ResumeLoop workspace index (rebuildable)
 .cache/
+
+# Local provider selection (per-workspace, not committed)
+.resumeloop/
