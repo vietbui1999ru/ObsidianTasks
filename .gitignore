@@ -28,8 +28,12 @@ harness/batch-build/
 # Claude Code — ephemeral/local only; skills are tracked intentionally
 .claude/session-state.md
 .claude/settings.local.json
+.claude/profile.md
 .claude/agent-memory/
 .claude/worktrees/
+
+# CodeGraphContext — local tool config/session files
+.cgcignore
 
 # macOS
 .DS_Store
