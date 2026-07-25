@@ -20,7 +20,10 @@ export function ensureDemoCleanupScheduler(): void {
     }
   }
 
-  // Run once on first request, then every 6 hours (half the 12h demo TTL)
+  // Run once on first request, then every 6 hours (half the 12h demo TTL).
+  // unref() so this timer alone can't keep the process alive — otherwise a
+  // graceful shutdown (e.g. Playwright killing the dev server between test
+  // retries) can leave a zombie process still holding the SQLite file open.
   void runDemoCleanup()
-  setInterval(runDemoCleanup, 6 * 60 * 60 * 1000)
+  setInterval(runDemoCleanup, 6 * 60 * 60 * 1000).unref()
 }
