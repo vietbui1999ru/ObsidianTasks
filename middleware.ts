@@ -53,6 +53,9 @@ function isPublicPath(pathname: string): boolean {
     pathname.startsWith('/auth/') ||
     pathname.startsWith('/api/auth/') ||
     pathname === '/api/health' ||
+    // Prometheus scraper has no NextAuth session; the route's own METRICS_TOKEN
+    // bearer check is the authorization.
+    pathname === '/api/metrics/prometheus' ||
     pathname === '/favicon.ico' ||
     pathname.startsWith('/_next/')
   )
