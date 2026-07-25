@@ -43,6 +43,10 @@ export function getDb(): DB {
   _db = new Database(dbPath)
   _db.pragma('journal_mode = WAL')
   _db.pragma('foreign_keys = ON')
+  // Retry instead of erroring immediately when another process/connection is
+  // mid-write on the same file (e.g. two processes opening a fresh db.sqlite
+  // at nearly the same moment, as e2e/global-setup.ts and the dev server do).
+  _db.pragma('busy_timeout = 5000')
   runMigrations(_db)
   globalForDb._db = _db
   return _db
