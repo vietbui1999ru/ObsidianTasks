@@ -42,9 +42,13 @@ Internet → Cloudflare edge → cloudflared (tunnel, no inbound port) → app:3
   - `DEMO_JD_MAX_CHARS` (20,000, `lib/config.ts`) — JD paste cap for demo sessions.
   - Existing gates stay: 10 lifetime generations + 3 concurrent per demo user,
     20/20 token buckets on chat/generate, 300 req/min/IP in middleware.
-- **Demo cleanup** runs in-process: `instrumentation.ts` purges expired demo users at
-  boot and every 6h (half the 12h TTL). No external cron needed;
-  `/api/cron/cleanup-demo` remains as a manual trigger (LOGS_API_KEY-gated).
+- **Demo cleanup** runs in-process: `lib/demo-cleanup-scheduler.ts`, started once
+  from the root layout on the first request, purges expired demo users then
+  every 6h (half the 12h TTL). It isn't wired through `instrumentation.ts`
+  because that file is bundled by webpack for the Edge runtime too (this app
+  has Edge middleware), and Edge can't resolve the Node builtins the demo-seed
+  cleanup path needs. No external cron needed; `/api/cron/cleanup-demo` remains
+  as a manual trigger (LOGS_API_KEY-gated).
 
 ## Bring-up
 
