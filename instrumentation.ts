@@ -3,7 +3,11 @@
 export async function register() {
   if (process.env.NEXT_RUNTIME !== 'nodejs') return
 
-  const { cleanupExpiredDemoUsers } = await import('./lib/demo-seed')
+  // webpackIgnore: this file is bundled for both the edge and nodejs runtimes;
+  // without the ignore comment webpack still traces this import for the edge
+  // build and fails on the Node builtins (fs/path/crypto) pulled in transitively
+  // by lib/demo-seed -> lib/db.ts / lib/crypto.ts.
+  const { cleanupExpiredDemoUsers } = await import(/* webpackIgnore: true */ './lib/demo-seed')
 
   async function runDemoCleanup() {
     try {
