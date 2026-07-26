@@ -13,8 +13,7 @@ vi.mock('next-auth', () => ({
   })),
 }))
 
-vi.mock('./app-mode', () => ({ isCloud: vi.fn() }))
-vi.mock('./demo-mode', () => ({ isDemoPublic: vi.fn() }))
+vi.mock('./app-mode', () => ({ isAuthRequired: vi.fn() }))
 
 describe('auth() local-mode wrapper', () => {
   beforeEach(() => {
@@ -26,11 +25,9 @@ describe('auth() local-mode wrapper', () => {
     })
   })
 
-  it('returns a synthetic default session in local mode, without calling NextAuth', async () => {
-    const { isCloud } = await import('./app-mode')
-    const { isDemoPublic } = await import('./demo-mode')
-    vi.mocked(isCloud).mockReturnValue(false)
-    vi.mocked(isDemoPublic).mockReturnValue(false)
+  it('returns a synthetic default session when auth is not required, without calling NextAuth', async () => {
+    const { isAuthRequired } = await import('./app-mode')
+    vi.mocked(isAuthRequired).mockReturnValue(false)
 
     const { auth } = await import('./auth')
     const session = await auth()
@@ -40,28 +37,14 @@ describe('auth() local-mode wrapper', () => {
     expect(mockNextAuthAuth).not.toHaveBeenCalled()
   })
 
-  it('delegates to real NextAuth when isCloud() is true', async () => {
-    const { isCloud } = await import('./app-mode')
-    const { isDemoPublic } = await import('./demo-mode')
-    vi.mocked(isCloud).mockReturnValue(true)
-    vi.mocked(isDemoPublic).mockReturnValue(false)
+  it('delegates to real NextAuth when isAuthRequired() is true', async () => {
+    const { isAuthRequired } = await import('./app-mode')
+    vi.mocked(isAuthRequired).mockReturnValue(true)
 
     const { auth } = await import('./auth')
     const session = await auth()
 
     expect(mockNextAuthAuth).toHaveBeenCalledTimes(1)
     expect(session?.user.id).toBe('real-user-id')
-  })
-
-  it('delegates to real NextAuth when isDemoPublic() is true', async () => {
-    const { isCloud } = await import('./app-mode')
-    const { isDemoPublic } = await import('./demo-mode')
-    vi.mocked(isCloud).mockReturnValue(false)
-    vi.mocked(isDemoPublic).mockReturnValue(true)
-
-    const { auth } = await import('./auth')
-    await auth()
-
-    expect(mockNextAuthAuth).toHaveBeenCalledTimes(1)
   })
 })

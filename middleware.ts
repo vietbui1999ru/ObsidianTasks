@@ -3,12 +3,11 @@ import { authConfig } from '@/lib/auth.config'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import type { NextAuthRequest } from 'next-auth'
-import { isCloud } from '@/lib/app-mode'
-import { isDemoPublic } from '@/lib/demo-mode'
+import { isAuthRequired } from '@/lib/app-mode'
 
-// Single-user local mode: no signin wall. Cloud/hosted-demo-public deployments
+// Single-user local mode: no signin wall. Cloud/hosted-demo-public/e2e-CI paths
 // keep full NextAuth gating — this only ever short-circuits a local boot.
-const LOCAL_MODE = !isCloud() && !isDemoPublic()
+const LOCAL_MODE = !isAuthRequired()
 
 // Edge-safe in-process IP rate limiter — 300 requests/min per IP across all API routes.
 // Provides DoS protection. In multi-instance deployments this is per-instance;

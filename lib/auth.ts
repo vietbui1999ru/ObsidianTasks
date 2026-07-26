@@ -8,8 +8,7 @@ import { authConfig } from './auth.config'
 import { validateCredentials, type UserRow } from './auth-credentials'
 import { checkRateLimitAsync } from './rate-limit'
 import { seedWelcomeOutput } from './account'
-import { isCloud } from './app-mode'
-import { isDemoPublic } from './demo-mode'
+import { isAuthRequired } from './app-mode'
 
 declare module 'next-auth' {
   interface Session {
@@ -181,10 +180,10 @@ const { handlers, auth: nextAuthAuth, signIn, signOut } = NextAuth({
 
 export { handlers, signIn, signOut }
 
-// Single-user local mode (no cloud, no hosted public demo): skip real NextAuth
-// entirely and hand back a synthetic session for the fixed 'default' user_id
-// every route already scopes its queries by. Cloud/demo-public paths are
-// untouched — real multi-tenant auth stays fully in effect there.
+// Single-user local mode: skip real NextAuth entirely and hand back a synthetic
+// session for the fixed 'default' user_id every route already scopes its
+// queries by. Cloud/demo-public/e2e-CI paths are untouched — real multi-tenant
+// auth stays fully in effect there (see lib/app-mode.ts::isAuthRequired).
 const LOCAL_SESSION: Session = {
   user: { id: 'default', email: 'local@resumeloop', isDemo: false },
   expires: '2099-01-01T00:00:00.000Z',
@@ -194,6 +193,6 @@ const LOCAL_SESSION: Session = {
 // higher-order middleware-wrapping form isn't used outside middleware.ts, which
 // builds its own NextAuth(authConfig) instance from the Edge-safe config.
 export async function auth(): Promise<Session | null> {
-  if (!isCloud() && !isDemoPublic()) return LOCAL_SESSION
+  if (!isAuthRequired()) return LOCAL_SESSION
   return nextAuthAuth()
 }
