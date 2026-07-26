@@ -90,6 +90,10 @@ jobs:
       - name: Run E2E tests
         run: npm run test:e2e
         env:
+          # e2e exercises the real multi-tenant auth + user_id scoping, so it must
+          # run in cloud mode — local mode short-circuits auth() to a synthetic
+          # 'default' session, which would desync from the seeded test-user-id fixtures.
+          APP_MODE: cloud
           NEXTAUTH_SECRET: test-secret-for-e2e-only
           NEXTAUTH_URL: http://localhost:3001
 

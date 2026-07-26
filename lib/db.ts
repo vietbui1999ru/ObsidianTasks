@@ -33,8 +33,13 @@ export function getDb(): DB {
   let dbPath: string
   if (process.env.DB_PATH) {
     const resolved = path.resolve(process.cwd(), process.env.DB_PATH)
-    if (!resolved.startsWith(process.cwd() + path.sep) && resolved !== process.cwd()) {
-      throw new Error(`DB_PATH must be within the project directory: ${resolved}`)
+    // Allowed roots: the project cwd (existing behavior) or the resumeloop CLI's
+    // workspace root — `resumeloop` boot points DB_PATH at <RESUMELOOP_HOME>/.cache/.
+    const allowedRoots = [process.cwd()]
+    if (process.env.RESUMELOOP_HOME) allowedRoots.push(path.resolve(process.env.RESUMELOOP_HOME))
+    const withinAllowedRoot = allowedRoots.some(root => resolved === root || resolved.startsWith(root + path.sep))
+    if (!withinAllowedRoot) {
+      throw new Error(`DB_PATH must be within the project directory or RESUMELOOP_HOME: ${resolved}`)
     }
     dbPath = resolved
   } else {

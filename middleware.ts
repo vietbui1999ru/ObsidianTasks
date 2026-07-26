@@ -1,10 +1,14 @@
 import NextAuth from 'next-auth'
 import { authConfig } from '@/lib/auth.config'
 import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
 import type { NextAuthRequest } from 'next-auth'
+import { isCloud } from '@/lib/app-mode'
+import { isDemoPublic } from '@/lib/demo-mode'
 
-// Use Edge-safe config only — no DB, no native modules
-const { auth } = NextAuth(authConfig)
+// Single-user local mode: no signin wall. Cloud/hosted-demo-public deployments
+// keep full NextAuth gating — this only ever short-circuits a local boot.
+const LOCAL_MODE = !isCloud() && !isDemoPublic()
 
 // Edge-safe in-process IP rate limiter — 300 requests/min per IP across all API routes.
 // Provides DoS protection. In multi-instance deployments this is per-instance;
@@ -62,7 +66,9 @@ function isPublicPath(pathname: string): boolean {
 }
 
 
-export default auth((req: NextAuthRequest) => {
+// Rate-limit + CSRF hardening — kept unconditional (even on localhost, against
+// e.g. a malicious page in another tab) regardless of auth mode.
+function applyHardening(req: NextRequest): NextResponse | null {
   const { pathname } = req.nextUrl
 
   // Global IP rate limit for all API routes
@@ -88,18 +94,32 @@ export default auth((req: NextAuthRequest) => {
     }
   }
 
-  if (isPublicPath(pathname)) return NextResponse.next()
+  return null
+}
 
-  if (!req.auth) {
-    // API routes: return 401 — client fetch() must not silently get HTML
-    if (pathname.startsWith('/api/')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+export default LOCAL_MODE
+  ? function localMiddleware(req: NextRequest) {
+      return applyHardening(req) ?? NextResponse.next()
     }
-    return NextResponse.redirect(new URL('/auth/signin', req.url))
-  }
+  // Constructing NextAuth(authConfig) is deferred to the non-local branch so no
+  // AUTH_SECRET/NEXTAUTH_SECRET is ever required for a local boot.
+  : NextAuth(authConfig).auth((req: NextAuthRequest) => {
+      const hardened = applyHardening(req)
+      if (hardened) return hardened
 
-  return NextResponse.next()
-})
+      const { pathname } = req.nextUrl
+      if (isPublicPath(pathname)) return NextResponse.next()
+
+      if (!req.auth) {
+        // API routes: return 401 — client fetch() must not silently get HTML
+        if (pathname.startsWith('/api/')) {
+          return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+        return NextResponse.redirect(new URL('/auth/signin', req.url))
+      }
+
+      return NextResponse.next()
+    })
 
 export const config = {
   matcher: [
